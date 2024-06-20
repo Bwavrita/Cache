@@ -1,5 +1,5 @@
-Total de endereços acessados: 4
-Total de leituras: 2
-Total de escritas: 0
-Hits de leitura: 2
-Hits de escrita: 0
+Total de endereços acessados: 10
+Total de leituras: 4
+Total de escritas: 2
+Hits de leitura: 5
+Hits de escrita: 1
