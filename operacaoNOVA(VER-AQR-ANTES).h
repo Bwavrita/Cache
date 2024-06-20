@@ -32,11 +32,11 @@ int obterIndice(int endereco, Cache* c) {
 // Calcula as larguras dos campos de endereço
 void largurasEndereco(Cache* cache) {
     int largura = sizeof(void*) << 3;
-    int linha = logDois(cache->config.tamanhoLinha);
+    int linha = logDois(cache->config.larguraLinha);
     int indice = logDois(cache->config.numeroConjuntos);
 
     if (linha == -1) {
-        printf("ERRO: O tamanho do bloco da cache (%d) deve ser uma potência de dois.\n", cache->config.tamanhoLinha);
+        printf("ERRO: O tamanho do bloco da cache (%d) deve ser uma potência de dois.\n", cache->config.larguraLinha);
     } else {
         cache->end.linha = linha;
     }
