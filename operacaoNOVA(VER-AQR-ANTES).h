@@ -62,83 +62,83 @@ void escritaWriteBack(Cache* c) {
     }
 }
 
-void atualizaContadorUsos(Cache* cache, int linha, int coluna, int hit) {
+void atualizaContadorUsos(Cache* cache, int indice, int coluna, int hit) {
     if (hit) {
         if (strcmp(cache->config.substituicao, "LRU") == 0) {
-            cache->v[linha][coluna].contadorUsos = 0;
+            cache->v[indice][coluna].contadorUsos = 0;
         } else if (strcmp(cache->config.substituicao, "LFU") == 0) {
-            cache->v[linha][coluna].contadorUsos++;
+            cache->v[indice][coluna].contadorUsos++;
         }
     } else {
-        cache->v[linha][coluna].contadorUsos--;
+        cache->v[indice][coluna].contadorUsos--;
     }
 }
 
-int buscaBlocoSubstituicao(Cache* cache, int linha) {
+int buscaBlocoSubstituicao(Cache* cache, int indice) {
     int menosUtilizado = 0;
     for (int i = 0; i < cache->config.associatividade; i++) {
-        if (cache->v[linha][i].contadorUsos < cache->v[linha][menosUtilizado].contadorUsos) {
+        if (cache->v[indice][i].contadorUsos < cache->v[indice][menosUtilizado].contadorUsos) {
             menosUtilizado = i;
         }
     }
     return menosUtilizado;
 }
 
-void substitui(Cache* cache, int data, int linha) {
+void substitui(Cache* cache, int endereco) {
     int colunaSubstituicao = 0;
-
+    int indice = obterIndice(endereco,cache);
     if (strcmp(cache->config.substituicao, "LRU") == 0 || strcmp(cache->config.substituicao, "LFU") == 0) {
-        colunaSubstituicao = buscaBlocoSubstituicao(cache, linha);
+        colunaSubstituicao = buscaBlocoSubstituicao(cache,indice);
 
-        if (cache->config.escrita && cache->v[linha][colunaSubstituicao].sujo == 1) {
+        if (cache->config.escrita && cache->v[indice][colunaSubstituicao].sujo == 1) {
             cache->est.escrita++;
         }
 
-        cache->v[linha][colunaSubstituicao].tag = obterTag(data, cache);
-        cache->v[linha][colunaSubstituicao].contadorUsos = 0;
-        cache->v[linha][colunaSubstituicao].sujo = 0;
+        cache->v[indice][colunaSubstituicao].tag = obterTag(endereco, cache);
+        cache->v[indice][colunaSubstituicao].contadorUsos = 0;
+        cache->v[indice][colunaSubstituicao].sujo = 0;
     }
 }
 
-void buscaBloco(Cache* cache, int data, int linha, int* escritas) {
+void acharCache(Cache* cache, int endereco) {
     int inserido = 0;
-
+    int indice = obterIndice(endereco,cache);
     for (int i = 0; i < cache->config.associatividade; i++) {
-        if (cache->v[linha][i].tag == -1) {
-            cache->v[linha][i].tag = obterTag(data, cache);
-            cache->v[linha][i].contadorUsos = 0;
+        if (cache->v[indice][i].tag == -1) {
+            cache->v[indice][i].tag = obterTag(endereco, cache);
+            cache->v[indice][i].contadorUsos = 0;
             inserido = 1;
             break;
         }
     }
 
     if (!inserido) {
-        substitui(cache, data, linha);
+        substitui(cache,endereco);
     }
 }
 
-int readWrite(Cache* cache, int data, int operation, int* leituras, int* escritas) {
+int atualizarEscritaLeitura(Cache* cache, int endereco, int operation) {
     int hit = 0, coluna = 0;
-    int linha = obterIndice(data, cache);
+    int indice = obterIndice(endereco, cache);
 
     for (int i = 0; i < cache->config.associatividade; i++) {
-        if (cache->v[linha][i].tag == obterTag(data, cache)) {
+        if (cache->v[indice][i].tag == obterTag(endereco, cache)) {
             hit = 1;
             coluna = i;
         }
-        atualizaContadorUsos(cache, linha, i, hit);
+        atualizaContadorUsos(cache,indice, i, hit);
     }
 
     if (!hit) {
-        *leituras += 1;
-        buscaBloco(cache, data, linha, escritas);
+        cache->est.leituras ++;
+        acharCache(cache, endereco);
     }
 
     if (operation) {
         if (!cache->config.escrita) {
-            *escritas += 1;
+            cache->est.escrita ++;
         } else {
-            cache->v[linha][coluna].sujo = 1;
+            cache->v[indice][coluna].sujo = 1;
         }
     }
 

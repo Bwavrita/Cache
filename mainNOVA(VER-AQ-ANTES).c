@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "struct.h"
-#include "operacao.h"
+#include "operacaoNOVA(VER-AQR-ANTES).h"
 
 Cache* inicializar(FILE* f) {
     Cache* cache = (Cache*)malloc(sizeof(Cache));
@@ -43,23 +43,18 @@ void liberarCache(Cache* cache) {
     free(cache->v);
     free(cache);
 }
-
-void acharCache(int endereco, char operacao, Cache* cache) {
+void leituraEnd(int endereco, char operacao, Cache* cache) {
     int hit = 0;
-    int leitura = 0, escrita = 0;
 
     if (operacao == 'R') {
-        hit = readWrite(cache, endereco, 0, &leitura, &escrita);
+        hit = atualizarEscritaLeitura(cache, endereco, 0);
         cache->est.totalEnderecos++;
-        cache->est.leituras += leitura;
         if (hit) {
             cache->est.hitLeitura++;
         }
     } else if (operacao == 'W') {
-        hit = readWrite(cache, endereco, 1, &leitura, &escrita);
+        hit = atualizarEscritaLeitura(cache, endereco, 1);
         cache->est.totalEnderecos++;
-        cache->est.leituras += leitura;
-        cache->est.escrita += escrita;
         if (hit) {
             cache->est.hitEscrita++;
         }
@@ -84,7 +79,7 @@ int main() {
     char operacao;
     int endereco;
     while (fscanf(k, "%x %c", &endereco, &operacao) == 2) {
-        acharCache(endereco, operacao, c);
+        leituraEnd(endereco, operacao, c);
     }
     fclose(k);
 
