@@ -1,0 +1,8 @@
+Tamanho da cache: 524288
+Total de endereços acessados: 51200
+Taxa de hit: 99.91%
+Tempo médio: 10.05ns
+Leituras na Mp: 40
+Escritas na Mp: 6144
+Hits de leitura: 45016
+Hits de escrita: 6140

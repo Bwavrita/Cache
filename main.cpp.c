@@ -71,7 +71,7 @@ int main() {
     Cache* c = inicializar(f);
     fclose(f);
 
-    FILE* k = fopen("teste.txt", "r");
+    FILE* k = fopen("oficial.txt", "r");
     if (!k) {
         printf("Erro ao abrir o arquivo de entrada");
         return 1;
