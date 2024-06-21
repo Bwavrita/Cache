@@ -47,7 +47,6 @@ void liberarCache(Cache* cache) {
 }
 void leituraEnd(int endereco, char operacao, Cache* cache) {
     int hit = 0;
-
     if (operacao == 'R') {
         hit = atualizarEscritaLeitura(cache, endereco, 0);
         cache->est.totalEnderecos++;
@@ -93,10 +92,12 @@ int main() {
         return 1;
     }
     c->est.hitrate = ((c->est.hitLeitura + c->est.hitEscrita)*100)/c->est.totalEnderecos;
+    float temp = 10 + (1 - c->est.hitrate/100) * 60;
 
     fprintf(saida, "Tamanho da cache: %d\n", c->config.numeroLinhas*c->config.larguraLinha);
     fprintf(saida, "Total de endereços acessados: %2.f\n", c->est.totalEnderecos);
     fprintf(saida, "Taxa de hit: %.2f%%\n",c->est.hitrate);
+    fprintf(saida, "Tempo médio: %.2fns\n",temp);
     fprintf(saida, "Leituras na Mp: %d\n", c->est.leituras);
     fprintf(saida, "Escritas na Mp: %d\n", c->est.escrita);
     fprintf(saida, "Hits de leitura: %d\n", c->est.hitLeitura);

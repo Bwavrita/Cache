@@ -1,7 +1,7 @@
 #ifndef OPERACAO_H
 #define OPERACAO_H
 
-#include "struct.h"
+#include "estrutura.h"
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
@@ -19,14 +19,14 @@ int logDois(int n) {
 
 // Obtém a tag a partir de um endereço
 int obterTag(int endereco, Cache* c) {
-    int bits = c->end.linha + c->end.indice;
+    int bits = c->end.palavra + c->end.index;
     return endereco >> bits;
 }
 
 // Obtém o índice a partir de um endereço
 int obterIndice(int endereco, Cache* c) {
-    int mask = (1 << c->end.indice) - 1;
-    return (endereco >> c->end.linha) & mask;
+    int mask = (1 << c->end.index) - 1;
+    return (endereco >> c->end.palavra) & mask;
 }
 
 // Calcula as larguras dos campos de endereço
@@ -39,7 +39,7 @@ void largurasEndereco(Cache* cache) {
     } else {
         cache->end.palavra = palavra;
     }
-    if (indice == -1) {
+    if (index == -1) {
         printf("ERRO: O número de conjuntos na cache (%d) deve ser uma potência de dois.\n", cache->config.numeroConjuntos);
     } else {
         cache->end.index = index;
@@ -127,7 +127,9 @@ int atualizarEscritaLeitura(Cache* cache, int endereco, int operation) {
     }
 
     if (!hit) {
-        cache->est.leituras ++;
+        if(!operation){
+          cache->est.leituras ++;  
+        }
         acharCache(cache, endereco);
     }
 
