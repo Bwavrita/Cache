@@ -7,10 +7,11 @@ Cache* inicializar(FILE* f) {
     Cache* cache = (Cache*)malloc(sizeof(Cache));
     fscanf(f, "%d", &cache->config.larguraLinha);
     fscanf(f, "%d", &cache->config.numeroLinhas);
-    fscanf(f, "%d", &cache->config.numeroConjuntos);
     fscanf(f, "%d", &cache->config.associatividade);
     fscanf(f, "%d", &cache->config.escrita);
     fscanf(f, "%s", cache->config.substituicao);
+    
+    cache->config.numeroConjuntos = cache->config.numeroLinhas / cache->config.associatividade;
 
     cache->v = (LinhaCache**)malloc(cache->config.numeroConjuntos * sizeof(LinhaCache*));
     for (int i = 0; i < cache->config.numeroConjuntos; i++) {

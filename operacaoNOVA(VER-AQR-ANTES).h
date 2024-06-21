@@ -52,8 +52,9 @@ void largurasEndereco(Cache* cache) {
 
 // Realiza a escrita write-back na cache
 void escritaWriteBack(Cache* c) {
-    for (int i = 0; i < c->config.numeroConjuntos; i++) {
-        for (int j = 0; j < c->config.associatividade; j++) {
+	int i,j;
+    for (i = 0; i < c->config.numeroConjuntos; i++) {
+        for (j = 0; j < c->config.associatividade; j++) {
             if (c->v[i][j].sujo == 1) {
                 c->est.escrita++;
                 c->v[i][j].sujo = 0;
