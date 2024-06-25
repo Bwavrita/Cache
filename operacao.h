@@ -1,11 +1,11 @@
 #ifndef OPERACAO_H
 #define OPERACAO_H
 
-#include "struct.h"
+#include "estrutura.h"
 #include <stdio.h>
 #include <string.h>
+#include <math.h>
 
-// Calcula log base 2 de um número n, retornando -1 se n não for potência de 2
 int logDois(int n) {
     int log = 0;
     if (n == 0) return -1;
@@ -16,57 +16,36 @@ int logDois(int n) {
     return (n == 1) ? log : -1;
 }
 
-// Obtém a tag a partir de um endereço
 int obterTag(int endereco, Cache* c) {
-    int bits = c->end.linha + c->end.indice;
+    int bits = c->end.palavra + c->end.index;
     return endereco >> bits;
 }
 
-// Obtém o índice a partir de um endereço
 int obterIndice(int endereco, Cache* c) {
-    int mask = (1 << c->end.indice) - 1;
-    return (endereco >> c->end.linha) & mask;
+    int mask = (1 << c->end.index) - 1;
+    return (endereco >> c->end.palavra) & mask;
 }
 
-// Verifica se há um miss na cache
-int miss(int endereco, Cache* c, int* hitIndex) {
-    int tag = obterTag(endereco, c);
-    int indice = obterIndice(endereco, c);
-    for (int i = 0; i < c->config.associatividade; i++) {
-        LinhaCache temp = c->v[indice][i];
-        if (temp.tag == tag) {
-            *hitIndex = i;
-            return 1; // hit
-        }
-    }
-    return 0; // miss
-}
-
-// Calcula as larguras dos campos de endereço
 void largurasEndereco(Cache* cache) {
-    int largura = sizeof(void*) << 3;
-    int linha = logDois(cache->config.tamanhoLinha);
-    int indice = logDois(cache->config.numeroConjuntos);
+    int palavra = logDois(cache->config.larguraLinha);
+    int index = logDois(cache->config.numeroConjuntos);
 
-    if (linha == -1) {
-        printf("ERRO: O tamanho do bloco da cache (%d) deve ser uma potência de dois.\n", cache->config.tamanhoLinha);
+    if (palavra == -1) {
+        printf("ERRO: O tamanho do bloco da cache (%d) deve ser uma potência de dois.\n", cache->config.larguraLinha);
     } else {
-        cache->end.linha = linha;
+        cache->end.palavra = palavra;
     }
-    if (indice == -1) {
+    if (index == -1) {
         printf("ERRO: O número de conjuntos na cache (%d) deve ser uma potência de dois.\n", cache->config.numeroConjuntos);
     } else {
-        cache->end.indice = indice;
-    }
-    if (linha != -1 && indice != -1) {
-        cache->end.endereco = largura - (linha + indice);
+        cache->end.index = index;
     }
 }
 
-// Realiza a escrita write-back na cache
 void escritaWriteBack(Cache* c) {
-    for (int i = 0; i < c->config.numeroConjuntos; i++) {
-        for (int j = 0; j < c->config.associatividade; j++) {
+	int i,j;
+    for (i = 0; i < c->config.numeroConjuntos; i++) {
+        for (j = 0; j < c->config.associatividade; j++) {
             if (c->v[i][j].sujo == 1) {
                 c->est.escrita++;
                 c->v[i][j].sujo = 0;
@@ -75,77 +54,97 @@ void escritaWriteBack(Cache* c) {
     }
 }
 
-// Busca o bloco para substituição
-int buscaBlocoSubstituicao(Cache* c, int endereco) {
-    int menosUtilizado = 0;
-    int indice = obterIndice(endereco, c);
-
-    for (int i = 0; i < c->config.associatividade; i++) {
-        if (c->v[indice][i].contadorUsos < c->v[indice][menosUtilizado].contadorUsos) {
-            menosUtilizado = i;
-        }
-    }
-    return menosUtilizado;
-}
-
-void substitui(Cache* c, int endereco) {
-    int indice = obterIndice(endereco, c);
-    int coluna = buscaBlocoSubstituicao(c, endereco);
-
-    // Verificar se o bloco que está sendo substituído está sujo
-    if (c->v[indice][coluna].sujo == 1) {
-        c->est.escrita++;
-    }
-
-    // Atualizar o bloco substituído
-    c->v[indice][coluna].tag = obterTag(endereco, c);
-    c->v[indice][coluna].tempoAcesso = 0;
-    c->v[indice][coluna].sujo = 0;
-    c->v[indice][coluna].tempoAcesso = 0;
-
-    // Atualizar os blocos adjacentes
-    for (int k = 0; k < c->config.associatividade; k++) {
-        if (k != coluna) {
-            c->v[indice][k].tempoAcesso++;
-        }
-    }
-}
-
-// Verifica se o dado está na cache e atualiza as estatísticas
-void acharCache(int endereco, char operacao, Cache* c) {
-    int hitIndex = -1;
-    int hit = miss(endereco, c, &hitIndex);
-    int indice = obterIndice(endereco, c);
-
+void atualizaContadorUsos(Cache* cache, int indice, int coluna, int hit) {
     if (hit) {
-        if (operacao == 'W') {
-            c->est.hitEscrita++;
-            if (c->config.escrita == 0) {
-                c->est.escrita++;
-            } else {
-                c->v[indice][hitIndex].sujo = 1;
+        if (strcmp(cache->config.substituicao, "LRU") == 0) {
+            cache->v[indice][coluna].tempoAcesso++;
+        } else if (strcmp(cache->config.substituicao, "LFU") == 0) {
+            cache->v[indice][coluna].contadorUsos++;
+        }
+    }
+}
+
+
+int buscaBlocoSubstituicao(Cache* cache, int indice) {
+    int blocoSubstituicao = 0;
+    if (strcmp(cache->config.substituicao, "LRU") == 0) {
+        for (int i = 1; i < cache->config.associatividade; i++) {
+            if (cache->v[indice][i].tempoAcesso < cache->v[indice][blocoSubstituicao].tempoAcesso) {
+                blocoSubstituicao = i;
             }
-        } else {
-            c->est.leituras++;
-            c->est.hitLeitura++;
         }
-        c->v[indice][hitIndex].contadorUsos++;
-        c->v[indice][hitIndex].tempoAcesso = 0;
-        for (int k = 0; k < c->config.associatividade; k++) {
-            if (k != hitIndex) {
-                c->v[indice][k].tempoAcesso++;
+    } else if (strcmp(cache->config.substituicao, "LFU") == 0) {
+        for (int i = 1; i < cache->config.associatividade; i++) {
+            if (cache->v[indice][i].contadorUsos < cache->v[indice][blocoSubstituicao].contadorUsos) {
+                blocoSubstituicao = i;
             }
         }
-    } else {
-        if (operacao == 'W') {
-            c->est.escrita++;
-        } else {
-            c->est.leituras++;
+    } else if (strcmp(cache->config.substituicao, "ALEATORIA") == 0) {
+        blocoSubstituicao = rand() % cache->config.associatividade;
+    }
+    return blocoSubstituicao;
+}
+
+void substitui(Cache* cache, int endereco) {
+    int colunaSubstituicao = 0;
+    int indice = obterIndice(endereco,cache);
+    if (strcmp(cache->config.substituicao, "LRU") == 0 || strcmp(cache->config.substituicao, "LFU") == 0) {
+        colunaSubstituicao = buscaBlocoSubstituicao(cache,indice);
+
+        if (cache->config.escrita && cache->v[indice][colunaSubstituicao].sujo == 1) {
+            cache->est.escrita++;
         }
-        substitui(c, endereco);
+
+        cache->v[indice][colunaSubstituicao].tag = obterTag(endereco, cache);
+        cache->v[indice][colunaSubstituicao].contadorUsos = 0;
+        cache->v[indice][colunaSubstituicao].sujo = 0;
+    }
+}
+
+void acharCache(Cache* cache, int endereco) {
+    int inserido = 0;
+    int indice = obterIndice(endereco,cache);
+    for (int i = 0; i < cache->config.associatividade; i++) {
+        if (cache->v[indice][i].tag == -1) {
+            cache->v[indice][i].tag = obterTag(endereco, cache);
+            cache->v[indice][i].contadorUsos = 0;
+            inserido = 1;
+            break;
+        }
     }
 
-    c->est.totalEnderecos++;
+    if (!inserido) {
+        substitui(cache,endereco);
+    }
+}
+
+int atualizarEscritaLeitura(Cache* cache, int endereco, int operation) {
+    int hit = 0, coluna = 0;
+    int indice = obterIndice(endereco, cache);
+
+    for (int i = 0; i < cache->config.associatividade; i++) {
+        if (cache->v[indice][i].tag == obterTag(endereco, cache)) {
+            hit = 1;
+            coluna = i;
+        }
+        atualizaContadorUsos(cache,indice, i, hit);
+    }
+
+    if (!hit) {
+        if(!operation){
+          cache->est.leituras ++;
+        }
+        else if(operation) {
+            cache->est.leituras ++;
+            if (cache->config.escrita) {
+                cache->v[indice][coluna].sujo = 1;
+            }
+    }
+        acharCache(cache, endereco);
+    }
+
+
+    return hit;
 }
 
 #endif
