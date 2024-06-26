@@ -53,15 +53,18 @@ void leituraEnd(int endereco, char operacao, Cache* cache) {
         if (hit) {
             cache->est.hitLeitura++;
         }
+
+        printf("Read: %d, Hit Read: %d\n",cache->est.leituras,cache->est.hitLeitura);
     } else if (operacao == 'W') {
         hit = atualizarEscritaLeitura(cache, endereco, 1);
         cache->est.totalEnderecos++;
-        if (hit && cache->config.escrita) {
+        if (hit) {
             cache->est.hitEscrita++;
-        }else{
-            cache->est.hitEscrita++;
-            cache->est.escrita++;
+            if(!cache->config.escrita){
+                cache->est.escrita++;
+            }
         }
+
     }
 }
 

@@ -7,7 +7,7 @@ typedef struct {
     int numeroConjuntos; //quantidade de conjuntos
     int associatividade; //quantos por conjunto
     int escrita; //politica de escrita (0 - write through / 1 - write back)
-    char substituicao[4]; //metodo de escrita
+    char substituicao[10]; //metodo de escrita
 }CacheConfig;
 
 typedef struct{
@@ -16,6 +16,7 @@ typedef struct{
     int contadorUsos;
     int tempoAcesso;
     int sujo;
+    int endereco;
 }LinhaCache;
 
 typedef struct{
