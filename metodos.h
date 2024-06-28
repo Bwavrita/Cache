@@ -17,10 +17,11 @@ int logDois(int n) {
 }
 
 int obterTag(int endereco, Cache* c) {
-    int bits = c->end.palavra + c->end.index;
-    return endereco >> bits;
+    // A tag é obtida deslocando o endereço para a direita pelo número de bits do índice e da palavra
+    int deslocamento = c->end.index + c->end.palavra;
+    //printf("desolocamento %d\n",deslocamento);
+    return endereco >> deslocamento;//deslocamento;
 }
-
 int obterIndice(int endereco, Cache* c) {
     int mask = (1 << c->end.index) - 1;
     return (endereco >> c->end.palavra) & mask;
@@ -66,16 +67,16 @@ void atualizaContadorUsos(Cache* cache, int indice, int coluna, int hit) {
 
 
 int buscaBlocoSubstituicao(Cache* cache, int indice) {
-    int blocoSubstituicao = 0;
+    int blocoSubstituicao = 1;
     if (strcmp(cache->config.substituicao, "LRU") == 0) {
-        for (int i = 1; i < cache->config.associatividade; i++) {
-            if (cache->v[indice][i].tempoAcesso < cache->v[indice][blocoSubstituicao].tempoAcesso) {
+        for (int i = 0; i < cache->config.associatividade; i++) {
+            if (cache->v[indice][i].tempoAcesso > cache->v[indice][blocoSubstituicao].tempoAcesso) {
                 blocoSubstituicao = i;
             }
         }
     } else if (strcmp(cache->config.substituicao, "LFU") == 0) {
-        for (int i = 1; i < cache->config.associatividade; i++) {
-            if (cache->v[indice][i].contadorUsos < cache->v[indice][blocoSubstituicao].contadorUsos) {
+        for (int i = 0; i < cache->config.associatividade; i++) {
+            if (cache->v[indice][i].contadorUsos > cache->v[indice][blocoSubstituicao].contadorUsos) {
                 blocoSubstituicao = i;
             }
         }
@@ -90,13 +91,13 @@ void substitui(Cache* cache, int endereco) {
     int indice = obterIndice(endereco,cache);
     if (strcmp(cache->config.substituicao, "LRU") == 0 || strcmp(cache->config.substituicao, "LFU") == 0) {
         colunaSubstituicao = buscaBlocoSubstituicao(cache,indice);
-
         if (cache->config.escrita && cache->v[indice][colunaSubstituicao].sujo == 1) {
             cache->est.escrita++;
         }
 
         cache->v[indice][colunaSubstituicao].tag = obterTag(endereco, cache);
         cache->v[indice][colunaSubstituicao].contadorUsos = 0;
+        cache->v[indice][colunaSubstituicao].tempoAcesso = 0;
         cache->v[indice][colunaSubstituicao].sujo = 0;
         cache->v[indice][colunaSubstituicao].endereco = endereco;
     }
@@ -109,9 +110,12 @@ void acharCache(Cache* cache, int endereco) {
         if (cache->v[indice][i].tag == -1) {
             cache->v[indice][i].tag = obterTag(endereco, cache);
             cache->v[indice][i].contadorUsos = 0;
+            cache->v[indice][i].tempoAcesso = 0;
+            cache->v[indice][i].endereco = endereco;
             inserido = 1;
             break;
         }
+
     }
 
     if (!inserido) {
@@ -122,31 +126,31 @@ void acharCache(Cache* cache, int endereco) {
 int atualizarEscritaLeitura(Cache* cache, int endereco, int operation) {
     int hit = 0, coluna = 0;
     int indice = obterIndice(endereco, cache);
-    int tag = obterTag(endereco,cache);
-        for (int i = 0; i < cache->config.associatividade; i++) {
-            if (cache->v[indice][i].tag == tag){
-                hit = 1;
-                coluna = i;
-            }
-            atualizaContadorUsos(cache,indice, i, hit);
+    int tag = obterTag(endereco, cache);
+    printf("---------------------------------------\n");
+    for (int i = 0; i < cache->config.associatividade; i++) {
+        if (cache->v[indice][i].tag == tag){
+            hit = 1;
+            coluna = i;
+            printf("Dado: %x , Endereco: %x , Indice dado: %x , indice endereco: %x\n",
+                   cache->v[indice][i].endereco,endereco, obterIndice(cache->v[indice][i].endereco, cache), indice);
         }
-
+        atualizaContadorUsos(cache, indice, i, hit);
+    }
 
     if (!hit) {
-        if(!operation){
-          cache->est.leituras ++;
-        }
-        else if(operation) {
-            cache->est.leituras ++;
+        if (!operation) {
+            cache->est.leituras++;
+        } else if (operation) {
+            cache->est.leituras++;
             if (cache->config.escrita) {
                 cache->v[indice][coluna].sujo = 1;
-            }else{
+            } else {
                 cache->est.escrita++;
             }
-    }
+        }
         acharCache(cache, endereco);
     }
-
 
     return hit;
 }

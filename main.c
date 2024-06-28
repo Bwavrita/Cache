@@ -54,7 +54,7 @@ void leituraEnd(int endereco, char operacao, Cache* cache) {
             cache->est.hitLeitura++;
         }
 
-        printf("Read: %d, Hit Read: %d\n",cache->est.leituras,cache->est.hitLeitura);
+        //printf("Read: %d, Hit Read: %d\n",cache->est.leituras,cache->est.hitLeitura);
     } else if (operacao == 'W') {
         hit = atualizarEscritaLeitura(cache, endereco, 1);
         cache->est.totalEnderecos++;
@@ -77,7 +77,7 @@ int main() {
     Cache* c = inicializar(f);
     fclose(f);
 
-    FILE* k = fopen("teste.txt", "r");
+    FILE* k = fopen("oficial.txt", "r");
     if (!k) {
         printf("Erro ao abrir o arquivo de entrada");
         return 1;
