@@ -19,8 +19,7 @@ int logDois(int n) {
 int obterTag(int endereco, Cache* c) {
     // A tag é obtida deslocando o endereço para a direita pelo número de bits do índice e da palavra
     int deslocamento = c->end.index + c->end.palavra;
-    //printf("desolocamento %d\n",deslocamento);
-    return endereco >> deslocamento;//deslocamento;
+    return endereco >> deslocamento;
 }
 int obterIndice(int endereco, Cache* c) {
     int mask = (1 << c->end.index) - 1;
@@ -127,13 +126,10 @@ int atualizarEscritaLeitura(Cache* cache, int endereco, int operation) {
     int hit = 0, coluna = 0;
     int indice = obterIndice(endereco, cache);
     int tag = obterTag(endereco, cache);
-    printf("---------------------------------------\n");
     for (int i = 0; i < cache->config.associatividade; i++) {
         if (cache->v[indice][i].tag == tag){
             hit = 1;
             coluna = i;
-            printf("Dado: %x , Endereco: %x , Indice dado: %x , indice endereco: %x\n",
-                   cache->v[indice][i].endereco,endereco, obterIndice(cache->v[indice][i].endereco, cache), indice);
         }
         atualizaContadorUsos(cache, indice, i, hit);
     }
